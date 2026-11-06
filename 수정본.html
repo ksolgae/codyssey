@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영화 티어리스트</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .topbar-right {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #c9c9c9;
+      background: white;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background: #f7f7f7;
+    }
+
+    .btn-danger {
+      border-color: #d99;
+      color: #a33;
+    }
+
+    .btn-danger:hover {
+      background: #fff1f1;
+    }
+
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .hint {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .input {
+      flex: 1;
+      height: 40px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: #888;
+    }
+
+    .drop-area {
+      min-height: 100px;
+      border: 2px dashed #d5d5d5;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafafa;
+      transition: 0.15s;
+    }
+
+    .drop-area.active {
+      border-color: #666;
+      background: #f0f0f0;
+    }
+
+    .movie-list,
+    .tier-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .movie-card {
+      background: white;
+      border: 1px solid #d8d8d8;
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 120px;
+      max-width: 220px;
+      cursor: grab;
+      user-select: none;
+      word-break: break-word;
+    }
+
+    .movie-card.dragging {
+      opacity: 0.5;
+    }
+
+    .movie-card.selected {
+      border-color: #666;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .movie-title {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .movie-actions {
+      display: none;
+      margin-top: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .movie-card.selected .movie-actions {
+      display: flex;
+    }
+
+    .tier-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tier-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 110px;
+    }
+
+    .tier-label {
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .tier-letter {
+      font-size: 34px;
+      font-weight: bold;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .tier-name {
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .tier-body {
+      padding: 10px;
+      background: #fff;
+    }
+
+    .s { background: #d32f2f; }
+    .a { background: #f57c00; }
+    .b { background: #fbc02d; color: #222; }
+    .c { background: #388e3c; }
+    .d { background: #1976d2; }
+    .e { background: #7b1fa2; }
+
+    .empty {
+      color: #888;
+      font-size: 13px;
+      padding: 4px;
+    }
+
+    .edit-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .tier-row {
+        grid-template-columns: 1fr;
+      }
+
+      .add-row {
+        flex-direction: column;
+      }
+
+      .input,
+      .btn {
+        width: 100%;
+      }
+
+      .movie-card {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>영화 티어리스트</h1>
+      <div class="topbar-right">
+        <button class="btn btn-danger" id="resetBtn" type="button">초기화</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="panel">
+        <h2>영화 목록</h2>
+        <p class="hint">
+          영화를 추가하고 드래그해서 원하는 등급으로 옮기세요.<br />
+          영화를 클릭하면 수정/삭제 버튼이 나타납니다.
+        </p>
+
+        <form class="add-row" id="addForm">
+          <input
+            id="movieInput"
+            class="input"
+            type="text"
+            placeholder="영화 제목 입력"
+            maxlength="100"
+          />
+          <button class="btn" type="submit">추가</button>
+        </form>
+
+        <div class="drop-area" data-zone="list">
+          <div class="movie-list" id="zone-list"></div>
+        </div>
+      </aside>
+
+      <main class="tier-grid">
+        <section class="tier-row">
+          <div class="tier-label s">
+            <div class="tier-letter">S</div>
+            <div class="tier-name">최고</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="S">
+              <div class="tier-items" id="zone-S"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tier-row">
+          <div class="tier-label a">
+            <div class="tier-letter">A</div>
+            <div class="tier-name">매우 좋음</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="A">
+              <div class="tier-items" id="zone-A"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tier-row">
+          <div class="tier-label b">
+            <div class="tier-letter">B</div>
+            <div class="tier-name">좋음</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="B">
+              <div class="tier-items" id="zone-B"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tier-row">
+          <div class="tier-label c">
+            <div class="tier-letter">C</div>
+            <div class="tier-name">보통</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="C">
+              <div class="tier-items" id="zone-C"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tier-row">
+          <div class="tier-label d">
+            <div class="tier-letter">D</div>
+            <div class="tier-name">아쉬움</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="D">
+              <div class="tier-items" id="zone-D"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tier-row">
+          <div class="tier-label e">
+            <div class="tier-letter">E</div>
+            <div class="tier-name">별로</div>
+          </div>
+          <div class="tier-body">
+            <div class="drop-area" data-zone="E">
+              <div class="tier-items" id="zone-E"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      movies: [
+        { id: 1, title: "기생충", tier: "list" },
+        { id: 2, title: "인터스텔라", tier: "list" },
+        { id: 3, title: "쇼생크 탈출", tier: "list" },
+        { id: 4, title: "다크 나이트", tier: "list" },
+        { id: 5, title: "인셉션", tier: "list" },
+        { id: 6, title: "포레스트 검프", tier: "list" },
+        { id: 7, title: "타이타닉", tier: "list" },
+        { id: 8, title: "어벤져스: 엔드게임", tier: "list" }
+      ],
+      nextId: 9,
+      selectedId: null,
+      editingId: null
+    };
+
+    const zoneNames = ["list", "S", "A", "B", "C", "D", "E"];
+    const zoneMap = {};
+    zoneNames.forEach(function (name) {
+      zoneMap[name] = document.getElementById("zone-" + name);
+    });
+
+    const addForm = document.getElementById("addForm");
+    const movieInput = document.getElementById("movieInput");
+    const resetBtn = document.getElementById("resetBtn");
+    const dropAreas = document.querySelectorAll(".drop-area");
+
+    function createEmpty(text) {
+      const el = document.createElement("div");
+      el.className = "empty";
+      el.textContent = text;
+      return el;
+    }
+
+    function render() {
+      zoneNames.forEach(function (zone) {
+        zoneMap[zone].innerHTML = "";
+      });
+
+      zoneNames.forEach(function (zone) {
+        const items = state.movies.filter(function (movie) {
+          return movie.tier === zone;
+        });
+
+        const container = zoneMap[zone];
+
+        if (items.length === 0) {
+          container.appendChild(
+            createEmpty(zone === "list" ? "영화가 없습니다." : "비어 있음")
+          );
+          return;
+        }
+
+        items.forEach(function (movie) {
+          container.appendChild(createMovieCard(movie));
+        });
+      });
+    }
+
+    function createMovieCard(movie) {
+      const card = document.createElement("div");
+      card.className = "movie-card";
+      card.draggable = true;
+      card.dataset.id = movie.id;
+
+      if (state.selectedId === movie.id) {
+        card.classList.add("selected");
+      }
+
+      card.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (state.editingId === movie.id) return;
+        state.selectedId = state.selectedId === movie.id ? null : movie.id;
+        render();
+      });
+
+      card.addEventListener("dragstart", function (e) {
+        e.dataTransfer.setData("text/plain", String(movie.id));
+        card.classList.add("dragging");
+      });
+
+      card.addEventListener("dragend", function () {
+        card.classList.remove("dragging");
+        dropAreas.forEach(function (area) {
+          area.classList.remove("active");
+        });
+      });
+
+      if (state.editingId === movie.id) {
+        const editBox = document.createElement("div");
+        editBox.className = "edit-box";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "input";
+        input.value = movie.title;
+        input.maxLength = 100;
+
+        const editActions = document.createElement("div");
+        editActions.className = "edit-actions";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn btn-small";
+        saveBtn.textContent = "저장";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "btn btn-small";
+        cancelBtn.textContent = "취소";
+
+        saveBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const newTitle = input.value.trim();
+
+          if (!newTitle) {
+            alert("영화 제목을 입력하세요.");
+            input.focus();
+            return;
+          }
+
+          movie.title = newTitle;
+          state.editingId = null;
+          render();
+        });
+
+        cancelBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          state.editingId = null;
+          render();
+        });
+
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            saveBtn.click();
+          }
+
+          if (e.key === "Escape") {
+            state.editingId = null;
+            render();
+          }
+        });
+
+        editActions.appendChild(saveBtn);
+        editActions.appendChild(cancelBtn);
+        editBox.appendChild(input);
+        editBox.appendChild(editActions);
+        card.appendChild(editBox);
+
+        setTimeout(function () {
+          input.focus();
+          input.select();
+        }, 0);
+
+        return card;
+      }
+
+      const title = document.createElement("div");
+      title.className = "movie-title";
+      title.textContent = movie.title;
+
+      const actions = document.createElement("div");
+      actions.className = "movie-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "btn btn-small";
+      editBtn.textContent = "수정";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn btn-small btn-danger";
+      deleteBtn.textContent = "삭제";
+
+      editBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        state.editingId = movie.id;
+        state.selectedId = movie.id;
+        render();
+      });
+
+      deleteBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+
+        const ok = confirm("이 영화를 삭제할까요?");
+        if (!ok) return;
+
+        state.movies = state.movies.filter(function (m) {
+          return m.id !== movie.id;
+        });
+
+        if (state.selectedId === movie.id) state.selectedId = null;
+        if (state.editingId === movie.id) state.editingId = null;
+
+        render();
+      });
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(title);
+      card.appendChild(actions);
+
+      return card;
+    }
+
+    function moveMovie(movieId, zone) {
+      const movie = state.movies.find(function (m) {
+        return m.id === movieId;
+      });
+
+      if (!movie) return;
+
+      movie.tier = zone;
+      state.selectedId = null;
+      state.editingId = null;
+      render();
+    }
+
+    addForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const title = movieInput.value.trim();
+
+      if (!title) {
+        alert("영화 제목을 입력하세요.");
+        movieInput.focus();
+        return;
+      }
+
+      state.movies.push({
+        id: state.nextId++,
+        title: title,
+        tier: "list"
+      });
+
+      movieInput.value = "";
+      movieInput.focus();
+      render();
+    });
+
+    resetBtn.addEventListener("click", function () {
+      const ok = confirm("티어를 초기화하고 모든 영화를 목록으로 되돌릴까요?");
+      if (!ok) return;
+
+      state.movies.forEach(function (movie) {
+        movie.tier = "list";
+      });
+
+      state.selectedId = null;
+      state.editingId = null;
+      render();
+    });
+
+    drop
